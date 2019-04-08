@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "save-per-network-deployment-record": "save-per-network-deployment-record.js"
+  }
+}
