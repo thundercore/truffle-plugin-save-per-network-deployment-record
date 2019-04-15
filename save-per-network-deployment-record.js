@@ -71,6 +71,7 @@ module.exports = (config, done) => {
       } else {
         d['networks'] = n;
         const outStr = JSON.stringify(d, null, '  ') + '\n';
+        console.log(`writing ${outP}`);
         fs.writeFileSync(outP, outStr, { encoding: 'utf-8' });
       }
       if (linkDir) {
@@ -78,21 +79,15 @@ module.exports = (config, done) => {
         const inLinkP = outP;
         const outLinkP = path.join(linkDir, inName);
         try {
+          console.log(`hard-linking ${inLinkP} ${outLinkP}`);
           fs.linkSync(inLinkP, outLinkP);
         } catch (err) {
           if (err.code === 'EEXIST') {
             fs.unlinkSync(outLinkP);
+            console.log(`hard-linking ${inLinkP} ${outLinkP}`);
             fs.linkSync(inLinkP, outLinkP);
           }
         }
-        try {
-          fs.unlinkSync(outP);
-        } catch (err) { // allow ENOENT
-          if (err.code !== 'ENOENT') {
-            throw err;
-          }
-        }
-        fs.symlinkSync(inLinkP, outP);
       }
     }
   }
