@@ -35,9 +35,9 @@ module.exports = (config, done) => {
   for (const i in transientNetworkConfig) {
     transientNetworks.add(transientNetworkConfig[i]['network_id']);
   }
-  // config.network_id can be '*', e.g. when config.network === 'devleopment'
+  // config.network_id can be '*', e.g. when config.network === 'development'
   transientNetworks.add('*');
-  // Promise returned by web3.eth.net.getId() would not resolve before "truffle run" termination,
+  // Promise returned by web3.eth.net.getId() would not resolve before "truffle run" terminates,
   // so not using it here.
   // Instead the user must specify a non-'*' network_id in `truffle-config.js` for the selected network.
   const deployedNetworkId = config.network_id;
@@ -46,8 +46,9 @@ module.exports = (config, done) => {
   if (!transientNetworks.has(deployedNetworkId)) {
     const inD = path.join('build', 'contracts');
     const contractsDirContents = fs.readdirSync(inD);
-    const outD = 'contract-deployment-records';
+    const outD = 'contracts-deployed-to-production';
     mkdirp.sync(outD);
+    const linkDir = config['create-symlink-without-network-id-prefix'];
     for (const inName of contractsDirContents) {
       if (typeof(inName) != 'string' || !inName.endsWith('.json')) {
         continue;
@@ -59,16 +60,39 @@ module.exports = (config, done) => {
       const n = d['networks'];
 
       for (const j in n) {
-        if (j !== deployedNetworkId) {
+        // Leave all non-transient networks for front-end app consumption
+        // even if those networks are not the one we're deploying to.
+        if (transientNetworks.has(j)) {
           delete n[j];
         }
       }
       if (Object.entries(n).length === 0) {
-        console.log(`Output ${outName} has empty 'networks' attribute. Not writing deployment record.`);
+        console.log(`Deploying to network "${deployedNetworkId}" but "${outName}" has empty "networks" attribute. Not writing deployment record.`);
       } else {
         d['networks'] = n;
         const outStr = JSON.stringify(d, null, '  ') + '\n';
         fs.writeFileSync(outP, outStr, { encoding: 'utf-8' });
+      }
+      if (linkDir) {
+        mkdirp.sync(linkDir);
+        const inLinkP = outP;
+        const outLinkP = path.join(linkDir, inName);
+        try {
+          fs.linkSync(inLinkP, outLinkP);
+        } catch (err) {
+          if (err.code === 'EEXIST') {
+            fs.unlinkSync(outLinkP);
+            fs.linkSync(inLinkP, outLinkP);
+          }
+        }
+        try {
+          fs.unlinkSync(outP);
+        } catch (err) { // allow ENOENT
+          if (err.code !== 'ENOENT') {
+            throw err;
+          }
+        }
+        fs.symlinkSync(inLinkP, outP);
       }
     }
   }

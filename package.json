@@ -6,7 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [ "smart contract" ],
+  "keywords": [
+    "smart contract"
+  ],
   "author": "",
-  "license": "LicenseRef-COPYING"
+  "license": "LicenseRef-COPYING",
+  "devDependencies": {
+    "eslint": "5.16.0"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  }
 }
