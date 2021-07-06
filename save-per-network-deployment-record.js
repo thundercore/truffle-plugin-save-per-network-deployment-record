@@ -23,18 +23,23 @@ module.exports = (config, done) => {
   if (!config.network_id) {
     throw new Error(`Invalid config.network_id: ${config.network_id}. Check 'truffle-config.js or --network option'`);
   }
-  // read config file `transient-networks.jsonc`, format:
-  // ```
-  // {
-  //   "truffle-develop": { "network_id": "5777" },
-  // }
-  // ```
-  const s0 = fs.readFileSync('transient-networks.jsonc', {encoding: 'utf8'});
-  const transientNetworkConfig = JSON5.parse(s0);
+
   const transientNetworks = new Set(); // set of networkIds
-  for (const i in transientNetworkConfig) {
-    transientNetworks.add(transientNetworkConfig[i]['network_id']);
+
+  if (fs.existsSync('transient-networks.jsonc')) {
+    // read config file `transient-networks.jsonc`, format:
+    // ```
+    // {
+    //   "truffle-develop": { "network_id": "5777" },
+    // }
+    // ```
+    const s0 = fs.readFileSync('transient-networks.jsonc', {encoding: 'utf8'});
+    const transientNetworkConfig = JSON5.parse(s0);
+    for (const i in transientNetworkConfig) {
+      transientNetworks.add(transientNetworkConfig[i]['network_id']);
+    }
   }
+
   // config.network_id can be '*', e.g. when config.network === 'development'
   transientNetworks.add('*');
   // Promise returned by web3.eth.net.getId() would not resolve before "truffle run" terminates,
